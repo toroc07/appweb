@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset de Calidad del Aire - Italia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Cabecera -->
+        <header>
+            <div class="header-content">
+                <div class="logo-container">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <h1>Dataset Ambiental</h1>
+                </div>
+
+                <button id="docButton" class="doc-floating-btn">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+                
+                <div class="header-controls">
+                    <div class="date-range-picker">
+                        <input type="date" id="start-date" class="date-input" min="2004-03-01" max="2005-04-30">
+                        <span>a</span>
+                        <input type="date" id="end-date" class="date-input" min="2004-03-01" max="2005-04-30">
+                    </div>
+                    
+                    <button class="btn btn-primary" id="updateButton">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Actualizar
+                    </button>
+
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Barra lateral -->
+            <nav class="sidebar" id="sidebar">
+                <div class="filter-section">
+                    <h3 class="filter-title">Filtros</h3>
+                    
+                    <div class="filter-group">
+                        <h4 class="filter-group-title">Contaminantes</h4>
+                        <div class="checkbox-list" id="contaminant-filters">
+                            <label class="custom-checkbox">
+                                CO (Monóxido de Carbono)
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="custom-checkbox">
+                                C6H6 (Benceno)
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="custom-checkbox">
+                                NOx (Óxidos de Nitrógeno)
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="custom-checkbox">
+                                NO2 (Dióxido de Nitrógeno)
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-group-title">Variables Meteorológicas</h4>
+                        <div class="checkbox-list">
+                            <label class="custom-checkbox">
+                                Temperatura
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="custom-checkbox">
+                                Humedad Relativa
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-group-title">Umbral de Alerta</h4>
+                        <div class="threshold-slider">
+                            <div class="slider-labels">
+                                <span>0%</span>
+                                <span>100%</span>
+                            </div>
+                            <input type="range" min="0" max="100" value="80" class="custom-range" id="alertThreshold">
+                            <div class="threshold-value">
+                                <span id="thresholdValue">80%</span>
+                            </div>
+                        </div>
+                    </div>
+                      <!-- Menú de gráficos disponibles -->
+                      <section class="filter-section" aria-labelledby="charts-heading">
+                        <h2 id="charts-heading" class="filter-title">Gráficos disponibles</h2>
+                        <ul class="checkbox-list" style="list-style: none; padding: 0;">
+                          <li>
+                            <a href="#mainChart"
+                              style="display: flex; align-items: center; padding: 0.5rem; text-decoration: none; color: inherit; border-radius: 0.375rem; transition: background-color 0.2s ease;">
+                              <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #27ae60;" fill="currentColor"
+                                viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                  d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z">
+                                </path>
+                              </svg>
+                              Serie temporal
+                            </a>
+                          </li>
+                          <li>
+                            <a href="#correlationChart"
+                              style="display: flex; align-items: center; padding: 0.5rem; text-decoration: none; color: inherit; border-radius: 0.375rem; transition: background-color 0.2s ease;">
+                              <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #27ae60;" fill="currentColor"
+                                viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd"
+                                  d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z"
+                                  clip-rule="evenodd"></path>
+                              </svg>
+                              Matriz de correlación
+                            </a>
+                          </li>
+                          <li>
+                            <a href="#heatmapChart"
+                              style="display: flex; align-items: center; padding: 0.5rem; text-decoration: none; color: inherit; border-radius: 0.375rem; transition: background-color 0.2s ease;">
+                              <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #27ae60;" fill="currentColor"
+                                viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                  d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                                </path>
+                              </svg>
+                              Mapa de calor
+                            </a>
+                          </li>
+                          <li>
+                            <a href="#seasonalChart"
+                              style="display: flex; align-items: center; padding: 0.5rem; text-decoration: none; color: inherit; border-radius: 0.375rem; transition: background-color 0.2s ease;">
+                              <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #27ae60;" fill="currentColor"
+                                viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 2a6 6 0 110 12 6 6 0 010-12z"></path>
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                              </svg>
+                              Gráfico radar
+                            </a>
+                          </li>
+                          <li>
+                            <a href="#kpis"
+                              style="display: flex; align-items: center; padding: 0.5rem; text-decoration: none; color: inherit; border-radius: 0.375rem; transition: background-color 0.2s ease;">
+                              <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #27ae60;" fill="currentColor"
+                                viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                  d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z">
+                                </path>
+                              </svg>
+                              KPIs
+                            </a>
+                          </li>
+                        </ul>
+                      </section>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Contenido principal -->
+            <main class="main-content">
+                <!-- Loading -->
+                <div id="loading" style="text-align: center; padding: 50px;">
+                    <div class="spinner"></div>
+                    <p>Cargando datos de calidad del aire...</p>
+                </div>
+
+                <!-- Información del dataset -->
+                <section id="stats-section" style="display: none;">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h2 class="chart-title">📊 Información del Dataset</h2>
+                        </div>
+                        <div id="dataset-info"></div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h2 class="chart-title">📈 Estadísticas de Contaminantes</h2>
+                        </div>
+                        <div id="pollutant-stats"></div>
+                    </div>
+                </section>
+
+                <!-- KPIs principales -->
+                <section class="kpi-section" id="kpis">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <h3 class="kpi-title">Calidad del aire</h3>
+                            <div class="kpi-content">
+                                <div class="kpi-icon bg-secondary">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14.5 2c1.13 0 2.04.9 2.04 2.02L16.5 6H18c.55 0 1 .45 1 1s-.45 1-1 1h-1.5v1.02c0 1.12-.91 2.02-2.04 2.02-.53 0-1.01-.2-1.37-.56L12.5 9.5 11.41 10.59c-.36.36-.84.56-1.37.56-1.13 0-2.04-.9-2.04-2.02V8H6c-.55 0-1-.45-1-1s.45-1 1-1h1.5V4.02C7.5 2.9 8.41 2 9.54 2c.53 0 1.01.2 1.37.56L12.5 4.05l1.59-1.49c.36-.36.84-.56 1.41-.56z"/>
+                                    </svg>
+                                </div>
+                                <div class="kpi-data">
+                                    <div class="kpi-value">Buena</div>
+                                    <div class="kpi-change">AQI: 42</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <h3 class="kpi-title">PM10</h3>
+                            <div class="kpi-content">
+                                <div class="kpi-icon bg-alert-yellow">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                </div>
+                                <div class="kpi-data">
+                                    <div class="kpi-value">28 µg/m³</div>
+                                    <div class="kpi-change">+12% respecto a ayer</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <h3 class="kpi-title">NO2</h3>
+                            <div class="kpi-content">
+                                <div class="kpi-icon bg-primary">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                                    </svg>
+                                </div>
+                                <div class="kpi-data">
+                                    <div class="kpi-value">15 µg/m³</div>
+                                    <div class="kpi-change">-8% respecto a ayer</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <h3 class="kpi-title">O3</h3>
+                            <div class="kpi-content">
+                                <div class="kpi-icon bg-alert-red">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                                    </svg>
+                                </div>
+                                <div class="kpi-data">
+                                    <div class="kpi-value">180 µg/m³</div>
+                                    <div class="kpi-change">+25% respecto a ayer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Dashboard principal -->
+                <div id="main-dashboard" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Serie temporal de contaminantes</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="mainChart"></div>
+                </div>
+
+                <!-- Matriz de correlación -->
+                <div id="correlation-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Matriz de correlación</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="correlationChart"></div>
+                </div>
+
+                <!-- Análisis de distribuciones -->
+                <div id="distribution-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Distribución de contaminantes</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="distributionChart"></div>
+                </div>
+
+                <!-- Patrones horarios -->
+                <div id="hourly-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Patrones horarios</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="hourlyChart"></div>
+                </div>
+
+                <!-- Patrones semanales -->
+                <div id="weekly-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Patrones semanales</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="weeklyChart"></div>
+                </div>
+
+                <!-- Análisis estacional -->
+                <div id="seasonal-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Análisis estacional</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="seasonalChart"></div>
+                </div>
+
+                <!-- Mapa de calor temporal -->
+                <div id="heatmap-chart" class="chart-container" style="display: none;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Mapa de calor temporal</h2>
+                        <button class="fullscreen-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="heatmapChart"></div>
+                </div>
+
+                <!-- KPIs ambientales detallados -->
+                <section id="kpis-section" style="display: none;">
+                    <div class="histograms-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Métricas CO</h3>
+                            </div>
+                            <div id="co-metrics"></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Métricas C6H6</h3>
+                            </div>
+                            <div id="c6h6-metrics"></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Métricas NOx</h3>
+                            </div>
+                            <div id="nox-metrics"></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Métricas NO2</h3>
+                            </div>
+                            <div id="no2-metrics"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Menú contextual -->
+        <div class="context-menu" id="contextMenu">
+            <div class="context-menu-item">Exportar como PNG</div>
+            <div class="context-menu-item">Exportar como PDF</div>
+            <div class="context-menu-item">Copiar datos</div>
+            <div class="context-menu-item">Ver en pantalla completa</div>
+        </div>
+    </div>
+    <!-- Panel de documentación técnica -->
+    <div id="docPanel" class="doc-panel">
+      <div class="doc-header">
+        <h3>Documentación Técnica</h3>
+        <button id="closeDocPanel" class="doc-close-btn" aria-label="Cerrar documentación">&times;</button>
+      </div>
+      <div class="doc-content">
+        <h2 style="text-align: center; color: #2c3e50;">📑 Documentación Técnica del Proyecto: Calidad del Aire</h2>
+        <br>
+        <h3 style="color: #2980b9;">1️⃣ Descripción General</h3>
+        <p>
+          El <strong>Dataset de Calidad del Aire - Italia (2004-2005)</strong> es una solución innovadora que permite el análisis y monitoreo de datos ambientales de manera integral. Gracias a su diseño modular, ofrece reportes dinámicos e interactivos, fundamentados en un dataset sintético realista basado en el Air Quality Dataset.
+        </p>
+        <br>
+        <h3 style="color: #2980b9;">2️⃣ Funcionalidades Clave</h3>
+        <ul style="list-style-type: disc; margin-left: 2rem;">
+          <li><strong>Filtros Avanzados:</strong> Selección precisa de contaminantes, variables meteorológicas y rango temporal (marzo 2004 - abril 2005).</li>
+          <li><strong>Umbrales de Alerta Configurables:</strong> Ajustables mediante un control deslizante, potenciando la gestión proactiva.</li>
+          <li><strong>Visualizaciones Interactivas:</strong> Incluye series temporales, análisis estacional, matriz de correlación, radar, histograma y mapas de calor.</li>
+          <li><strong>Indicadores Clave (KPIs):</strong> Presenta métricas ambientales esenciales y permite evaluar la calidad del aire en tiempo real.</li>
+          <li><strong>Sistema de Documentación Integrada:</strong> Facilita el aprendizaje continuo y el acceso a información técnica.</li>
+        </ul>
+        <br>
+        <h3 style="color: #2980b9;">3️⃣ Procesamiento y Análisis de Datos</h3>
+        <p>
+          El manejo de datos considera factores de tráfico, estacionales y meteorológicos. Además, el manejo del dataset filtra datos, calcula estadísticas (media, mediana, percentiles), crea matrices de correlación y realiza agregaciones temporales.
+        </p>
+        <br>
+        <h3 style="color: #2980b9;">4️⃣ Experiencia del Usuario</h3>
+        <ul style="list-style-type: disc; margin-left: 2rem;">
+          <li><strong>Interfaz Adaptativa:</strong> El menú lateral se ajusta automáticamente a dispositivos móviles para maximizar la visibilidad.</li>
+          <li><strong>Botones de Manejo de Graficos:</strong> Facilitan el análisis detallado de gráficos.</li>
+          <li><strong>Notificaciones Dinámicas:</strong> Garantizan confirmación de acciones y fluidez en la interacción.</li>
+          <li><strong>Exportación Flexible:</strong> Menú contextual para exportar gráficos en diversos formatos (PNG, PDF, etc.).</li>
+        </ul>
+        <br>
+        <h3 style="color: #2980b9;">5️⃣ Tecnologías y Herramientas Utilizadas</h3>
+        <ul style="list-style-type: disc; margin-left: 2rem;">
+          <li><strong>HTML5 y CSS:</strong> Estructura y diseño responsivo.</li>
+          <li><strong>JavaScript:</strong> Procesamiento dinámico.</li>
+          <li><strong>Python:</strong> Manejo del dataset y calculos.</li>
+          <li><strong>Google Fonts e íconos SVG:</strong> Estética moderna y corporativa.</li>
+        </ul>
+        <br>
+        <h3 style="color: #2980b9;">6️⃣ Recomendaciones Estratégicas</h3>
+        <p>
+          El sistema está diseñado para crecer y adaptarse: su arquitectura modular permite la inclusión de nuevas variables y su fácil mantenimiento garantiza la sostenibilidad del proyecto.
+        </p>
+        <br>
+        <h3 style="color: #27ae60;">✨ Conclusión</h3>
+        <p>
+          Este dataset no solo fortalece el análisis ambiental, sino que también posiciona a la organización como referente en la gestión proactiva de la calidad del aire.
+        </p>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
